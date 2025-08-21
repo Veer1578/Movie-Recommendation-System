@@ -1,3 +1,4 @@
+import random
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -65,14 +66,25 @@ def recommend_movies(genre=None, mood=None, rating=None, top_n=5):
 
     return recommendations if recommendations else "No suitable movie recommendation found."
 
+
+def display_random(df=movies_df, top_n=5):
+    df = df.dropna(subset=['Series_Title'])
+    sampled = df.sample(n=top_n)
+    recommendations = []
+
+    for _, row in sampled.iterrows():
+        polarity = TextBlob(str(row['Overview'])).sentiment.polarity
+        recommendations.append((row['Series_Title'], polarity))
+    return recommendations
 # Display recommendations
 
 
-def display_recommendations(recs, name):
+def display_recommendations(recs, name, genre):
     print(f"{Fore.YELLOW}🎥🍿AI Analyzed movie recommendations for {name}:")
     for idx, (title, polarity) in enumerate(recs, 1):
         sentiment = "Positive 😄" if polarity > 0 else "Negative 😔" if polarity < 0 else "neutral 😐"
-        print(f"{Fore.CYAN}{idx}. 🎥 {title} (Polarity: {polarity:.2f}, {sentiment})")
+        print(
+            f"{Fore.CYAN}{idx}. 🎥 {title} (Polarity: {polarity:.2f}, {sentiment}, {genre})")
 
 # Processing animation
 
@@ -92,7 +104,7 @@ def handle_AI(name):
 
     while True:
         genre_input = input(
-            f"{Fore.YELLOW} Enter genre name or number: ").strip()
+            f"{Fore.YELLOW}Enter genre name or number: ").strip()
         if genre_input.isdigit() and 1 <= int(genre_input) <= len(genres):
             genre = genres[int(genre_input) - 1]
             break
@@ -130,19 +142,26 @@ def handle_AI(name):
     if isinstance(recs, str):
         print(f"{Fore.RED}{recs}\n")
     else:
-        display_recommendations(recs, name)
-        
+        display_recommendations(recs, name, genre)
+
     while True:
-        action = input(f"{Fore.YELLOW}Would you like some more recommendations🎥(yes/no): ").strip().lower()
+        action = input(
+            f"{Fore.YELLOW}Would you like some more recommendations🎥(yes/random/no): ").strip().lower()
         if action == "no":
             print(f"{Fore.GREEN}Enjoy your movie picks, {name}!")
             break
         elif action == "yes":
-            recs = recommend_movies(genre=genre, mood=mood, rating=rating, top_n=5)
+            recs = recommend_movies(
+                genre=genre, mood=mood, rating=rating, top_n=5)
             if isinstance(recs, str):
                 print(f"{Fore.RED}{recs}\n")
             else:
-                display_recommendations(recs, name)
+                display_recommendations(recs, name, genre)
+        elif action == 'random':
+            print(f"{Fore.BLUE}🎲 Picking random recommendations", end="", flush=True)
+            animation()
+            recs = display_random(top_n=5)
+            display_recommendations(recs, name, "Random Genre")
         else:
             print(f"{Fore.RED}Invalid choice. Try Again \n")
 
